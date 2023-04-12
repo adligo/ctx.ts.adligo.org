@@ -13,7 +13,14 @@
   * See the License for the specific language governing permissions and
   * limitations under the License.
   */
+
+export const DEFAULT_FORMAT = '<logName/> <level/>: <message/>';
+export const INVALID_LOG_FORMAT = 'Invalid log format ';
+export const LEVEL = '<level/>';
+export const LOGNAME = '<logname/>';
+export const MESSAGE = '<message/>';
 export const ROOT = 'ROOT';
+
 
 export interface I_Log {
   debug(message : string): void
@@ -37,7 +44,7 @@ export interface I_LogConfig {
 
 export type I_StringSupplier = () => string;
 export type I_Out  = (message: string) => void;
-export function format(log: I_Log, message: string): string {
+export function format(log: I_Log, level: LogLevel, message: string): string {
     let format: string = log.getFormat();
     var outBuffer: string[] = [];
     var tagBuffer: string[] = [];
@@ -46,36 +53,42 @@ export function format(log: I_Log, message: string): string {
       let c = format.charAt(i);
       if (inTagBuffer) {
         if (c == '>') {
-          let tag: string = tagBuffer.toString().toLowerCase();
-          console.log('tag is ' + tag);
-          if (tag == '<logname/>') {
-              outBuffer.push(log.getName())
-          } else if (tag == '<level/>') {
-            switch(log.getLevel()) {
+          tagBuffer.push(c);
+          let tag: string = tagBuffer.join("").toLowerCase();
+          tagBuffer = [];
+          inTagBuffer = false;
+          //console.log('tag is ' + tag);
+          if (tag == LOGNAME) {
+              outBuffer.push(log.getName());
+          } else if (tag == LEVEL) {
+            switch(level) {
               case LogLevel.DEBUG: outBuffer.push('Debug'); break;
               case LogLevel.ERROR: outBuffer.push('Error'); break;
               case LogLevel.INFO: outBuffer.push('Info'); break;
               case LogLevel.TRACE: outBuffer.push('Trace'); break;
               case LogLevel.WARN: outBuffer.push('Warn'); break; 
             }
-          } else if (tag == '<message/>') {
+          } else if (tag == MESSAGE) {
             outBuffer.push(message)
           } else {
-              throw Error('Invalid log format ' + format);
+              throw Error(INVALID_LOG_FORMAT + format);
           }
         } else {
           tagBuffer.push(c)
         }          
-      }
-      if (c == '<') {
-        if (inTagBuffer) {
-          throw Error('Invalid log format ' + format);
+      } else {
+        if (c == '<') {
+          if (inTagBuffer) {
+            throw Error('Invalid log format ' + format);
+          }
+          inTagBuffer = true;
+          tagBuffer.push(c)
+        } else {
+          outBuffer.push(c)
         }
-        inTagBuffer = true;
-        tagBuffer.push(c)
-      } 
+      }
     }
-    return outBuffer.toString()
+    return outBuffer.join("")
   }
   
 export class Log implements I_Log {
@@ -91,10 +104,14 @@ export class Log implements I_Log {
     this.format = format;
   }
   debug(message: string): void {
-      throw new Error("Method not implemented.")
+    if (this.isDebug()) {
+      this.log(LogLevel.DEBUG, message);
+    }
   }
   error(message: string): void {
-      throw new Error("Method not implemented.")
+    if (this.isError()) {
+      this.log(LogLevel.ERROR, message);
+    }
   }
   getFormat(): string {
      return this.format;
@@ -106,35 +123,53 @@ export class Log implements I_Log {
      return this.name;
   }
   info(message: string): void {
-      throw new Error("Method not implemented.")
+    if (this.isInfo()) {
+      this.log(LogLevel.INFO, message);
+    }
   }
   isWarn(): boolean {
-      throw new Error("Method not implemented.")
+    if (this.level <= LogLevel.WARN) {
+      return true;
+    }
+    return false;
   }
   isTrace(): boolean {
-      throw new Error("Method not implemented.")
+    if (this.level <= LogLevel.TRACE) {
+      return true;
+    }
+    return false;
   }
   isInfo(): boolean {
-      throw new Error("Method not implemented.")
+    if (this.level >= LogLevel.INFO) {
+      return true;
+    }
+    return false;
   }
   isError(): boolean {
-      throw new Error("Method not implemented.")
+    if (this.level >= LogLevel.ERROR) {
+      return true;
+    }
+    return false;
   }
   isDebug(): boolean {
-      throw new Error("Method not implemented.")
+    if (this.level >= LogLevel.DEBUG) {
+      return true;
+    }
+    return false;
   }
   trace(message: string): void {
-      throw new Error("Method not implemented.")
+    if (this.isTrace()) {
+      this.log(LogLevel.TRACE, message);
+    }
   }
   warn(message: string): void {
     if (this.isWarn()) {
-      console.log()
+      this.log(LogLevel.WARN, message);
     }
   }
   
   private log(level: LogLevel, message: string) {
-
-      console.log
+    this.out(format(this, level, message));
   }
 }
 
@@ -182,7 +217,7 @@ export class LogManager {
     if (config == undefined) {
       let levels: Map<string, LogLevel> = new Map();
       levels.set(ROOT, LogLevel.INFO);
-      this.config = new LogConfig("<logName/> <level>: <message/>", levels);
+      this.config = new LogConfig(DEFAULT_FORMAT, levels);
     } else {
       this.config = config;
     }
@@ -195,9 +230,9 @@ export class LogManager {
   }
 
   getLog(logName: string) {
-
-    return new Log(logName, this.config.getFormat(), 
-      this.getLogLevel(logName), this.out);
+    let l: Log =  new Log(logName, this.config.getFormat(), 
+        this.getLogLevel(logName), this.out);
+    return l;
   }
 
   private getLogLevel(logName: string): LogLevel {
