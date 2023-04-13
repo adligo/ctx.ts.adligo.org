@@ -30,7 +30,9 @@
     }
   },
   "scripts": {
-    "ts-node": "ts-node "
+    "all-tests": "ts-node tests/all.tests.ts",
+    "io-tests": "ts-node tests/io.tests.mts",
+    "log-tests": "ts-node tests/log.tests.mts"
   },
   "type": "module",
   "types": "tests/log.tests.ts,tests/io.tests.mts",
