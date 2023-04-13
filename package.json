@@ -1,13 +1,14 @@
 {
-  "name": "@ts.adligo.org/ctx",
   "devDependencies": {
-    "@jest/globals": "^29.5.0",
-    "jest": "^29.5.0"
-  },
-  "jest": {
-    "verbose": true
+    "@ts.adligo.org/io": "^0.0.7",
+    "@ts.adligo.org/tests4j": "^0.2.6",
+    "@types/node": "^18.15.11",
+    "ts-node": "^10.9.1",
+    "tslib": "^2.5.0",
+    "typescript": "^5.0.4"
   },
   "lockfileVersion": 3,
+  "name": "@ts.adligo.org/ctx",
   "requires": true,
   "packages": {
     "": {
@@ -28,12 +29,10 @@
       }
     }
   },
-  "program": "${workspaceRoot}\\node_modules\\jest\\bin\\jest.js",
-  "args": [
-    "-i"
-  ],
   "scripts": {
-    "test": "jest"
+    "ts-node": "ts-node "
   },
+  "type": "module",
+  "types": "tests/log.tests.ts,tests/io.tests.mts",
   "version": "0.0.1"
 }
